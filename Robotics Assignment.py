@@ -17,6 +17,7 @@ class Colour_Finder:
         self.twistMessage = Twist()
         
         
+        
     def lasercall(self, data):
         self.laser = data      
     
@@ -29,6 +30,7 @@ class Colour_Finder:
         
         ranges = self.laser.ranges        
         if np.nanmin(ranges) > 0.5:
+            self.twistMessage.angular.z = 0
             self.twistMessage.linear.x = 0.3
             
         elif np.nanmin(ranges) <= 0.5:

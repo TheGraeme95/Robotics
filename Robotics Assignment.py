@@ -5,6 +5,7 @@ from sensor_msgs.msg import Image
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
 from cv_bridge import CvBridge, CvBridgeError
+import random
 
 class Colour_Finder:
     def __init__(self):
@@ -28,13 +29,35 @@ class Colour_Finder:
         except CvBridgeError, e:
             print e
         
-        ranges = self.laser.ranges        
-        if np.nanmin(ranges) > 0.5:
-            self.twistMessage.angular.z = 0
-            self.twistMessage.linear.x = 0.3
+        ranges = self.laser.ranges  
+        centre = ((len(ranges)-1)/2)
+        centreView = ranges[centre]         
+        rightView = ranges[centre:centre+100]       
+        leftView = ranges[centre-100:centre]
+        
+        
+    
+#        if np.nanmin(ranges) > 0.5:
+#            self.twistMessage.angular.z = 0
+#            self.twistMessage.linear.x = 0.5
+#            
+#            if np.nanmin(rightView) <= 0.5:
+#                self.twistMessage.linear.x = 0
+#                self.twistMessage.angular.z = -0.2
+#                
+#            elif np.nanmin(leftView) <= 0.5:
+#                self.twistMessage.linear.x = 0
+#                self.twistMessage.angular.z = 0.2
+#            
+#        elif np.nanmin(ranges) <= 0.5:
+#            self.twistMessage.linear.x = 0
+#            self.twistMessage.angular.z = 0.4
+    
+    
+                
             
-        elif np.nanmin(ranges) <= 0.5:
-            self.twistMessage.linear.x = 0
+            
+            
         
         
                

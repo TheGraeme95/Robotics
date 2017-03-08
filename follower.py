@@ -41,39 +41,29 @@ class image_converter:
         hsv_img = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
         
         hsv_green = cv2.inRange(hsv_img,
-                                 numpy.array((90, 70, 70)),
-                                 numpy.array((140, 100, 100)))
+                                 numpy.array((80, 100, 40)),
+                                 numpy.array((150, 255, 255)))  #green
+                                 
+        hsv_blue = cv2.inRange(hsv_img,
+                                 numpy.array((200, 100, 65)),
+                                 numpy.array((260, 255, 255)))  #blue
                                  
         hsv_thresh = cv2.inRange(hsv_img,
-                                 numpy.array((110, 100, 100)),
-                                 numpy.array((130, 255, 255)))
+                                 numpy.array((0, 90, 50)),
+                                 numpy.array((15, 255, 255))) #red
                                  
-        hsv_red = cv2.inRange(hsv_img,
-                                 numpy.array((0, 70, 70)),
-                                 numpy.array((15, 100, 100)))
-                                 
-        hsv_yellow = cv2.inRange(hsv_img,
-                                 numpy.array((45, 70, 70)),
-                                 numpy.array((60, 100, 100)))
+        hsv_thresh3 = cv2.inRange(hsv_img,
+                                 numpy.array((0, 40, 40)),
+                                 numpy.array((60, 100, 100)))#yellow
                             
 
         
 
-        bgr_contours, hierachy = cv2.findContours(bgr_thresh.copy(),
-                                                  cv2.RETR_TREE,
-                                                  cv2.CHAIN_APPROX_SIMPLE)
-
-        hsv_contours, hierachy = cv2.findContours(hsv_thresh.copy(),
-                                                  cv2.RETR_TREE,
-                                                  cv2.CHAIN_APPROX_SIMPLE)
-        for c in hsv_contours:
-            a = cv2.contourArea(c)
-            if a > 100.0:
-                cv2.drawContours(cv_image, c, -1, (255, 255, 123), 5)
+       
+        
         print '===='
         cv2.imshow("Image window", cv_image)
-        
-        #mask = cv2.inRange(bgr_thresh, hsv_img, hsv_thresh)
+               
         h, w, d = cv_image.shape
         search_top = 3*h/4
         search_bot = 3*h/4 + 20
@@ -94,7 +84,7 @@ class image_converter:
 
           self.cmd_vel_pub.publish(self.twist)
           # END CONTROL
-#        cv2.imshow('window',cv_image)
+
         cv2.waitKey(3)
 
 

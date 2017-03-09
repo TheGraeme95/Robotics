@@ -50,11 +50,11 @@ class image_converter:
                                  
         hsv_thresh = cv2.inRange(hsv_img,
                                  numpy.array((0, 90, 50)),
-                                 numpy.array((15, 255, 255))) #red
+                                 numpy.array((15, 255, 255)))  #red
                                  
         hsv_thresh3 = cv2.inRange(hsv_img,
                                  numpy.array((0, 40, 40)),
-                                 numpy.array((60, 100, 100)))#yellow
+                                 numpy.array((60, 100, 100))) #yellow
                             
 
         

@@ -33,18 +33,18 @@ class Colour_Finder:
         hsv_img = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
         #Colour Boundaries      
         redLower = np.array([0, 90, 50])
-        redUpper = np.array([15, 255, 255])
+        redUpper = np.array([8, 255, 255])
         
-        yellowLower = np.array([0, 40, 40])
-        yellowUpper = np.array([60, 100, 100])
+        yellowLower = np.array([25, 90, 20])
+        yellowUpper = np.array([45, 255, 255])
         
-        blueLower = np.array([200, 100, 65])
-        blueUpper = np.array([260, 255, 255])
+        blueLower = np.array([115, 70, 60])
+        blueUpper = np.array([125, 255, 255])
         
-        greenLower = np.array([80, 100, 40])
-        greenUpper = np.array([150, 255, 255])
+        greenLower = np.array([60, 100, 40])
+        greenUpper = np.array([80, 255, 255])
         
-        masks = cv2.inRange(hsv_img, greenLower, greenUpper)
+        masks = cv2.inRange(hsv_img, yellowLower, yellowUpper)
         output = cv2.bitwise_and(cv_image, cv_image, mask = masks)
         
         

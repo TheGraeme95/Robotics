@@ -4,6 +4,7 @@ import numpy as np
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Pose, Point, Quarternion
 from cv_bridge import CvBridge, CvBridgeError
 
 

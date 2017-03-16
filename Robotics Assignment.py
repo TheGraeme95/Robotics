@@ -48,21 +48,14 @@ class Colour_Finder:
         masks = cv2.inRange(hsv_img, yellowLower, yellowUpper)
         output = cv2.bitwise_and(cv_image, cv_image, mask = masks)
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
         ranges = self.laser.ranges  
         centre = ((len(ranges)-1)/2)
         centreView = ranges[centre]         
         rightView = ranges[centre:centre+100]       
         leftView = ranges[centre-100:centre]
         
+        
+    def 
         
         
         

@@ -21,9 +21,7 @@ class image_converter:
 
         cv2.namedWindow("Image window", 1)
         cv2.startWindowThread()
-        self.bridge = CvBridge()
-       # self.image_sub = rospy.Subscriber("/usb_cam/image_raw",
-        #                                  Image, self.callback)
+        self.bridge = CvBridge()       
         self.image_sub = rospy.Subscriber("/turtlebot/camera/rgb/image_raw",
                                           Image, self.callback)
         self.cmd_vel_pub = rospy.Publisher("/turtlebot/cmd_vel", Twist, queue_size=10)
@@ -71,10 +69,8 @@ class image_converter:
         hsv_thresh[search_bot:h, 0:w] = 0
         M = cv2.moments(hsv_thresh)
         
-        if M['m00'] > 1:
-          cx = int(M['m10']/M['m00'])
-          cy = int(M['m01']/M['m00'])
-          cv2.circle(cv_image, (cx, cy), 20, (0,0,255), -1)
+        if M['m00'] > 500:
+          cx = int(M['m10']/M['m00'])                   
           # BEGIN CONTROL
           err = cx - w/2
           self.twist=Twist()

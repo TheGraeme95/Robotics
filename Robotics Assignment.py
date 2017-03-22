@@ -3,68 +3,56 @@ import cv2
 import numpy as np
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import LaserScan
-from geometry_msgs.msg import Twist, PoseStamped, PoseWithCovarianceStamped
-from move_base_msgs.msg import MoveBaseActionFeedback
+from geometry_msgs.msg import Twist, PoseStamped
+from move_base_msgs.msg import MoveBaseActionResult
 #from geometry_msgs.msg import Pose, Point, Quarternion
 from cv_bridge import CvBridge, CvBridgeError
 
 
 class Colour_Finder:
     def __init__(self):
-        rospy.sleep(2)
         cv2.namedWindow("Robot Vision", 1)
         cv2.namedWindow("Colours", 1)
         cv2.startWindowThread()
-        self.bridge = CvBridge() 
-        self.laser_sub = rospy.Subscriber("/turtlebot/scan", LaserScan, self.lasercall)
-        self.image_sub = rospy.Subscriber("/turtlebot/camera/rgb/image_raw", Image, self.callback)
-        self.position_sub = rospy.Subscriber("/turtlebot/amcl_pose", PoseWithCovarianceStamped, self.pose_callback)
-        #self.goal_status = rospy.Subscriber("/turtlebot/move_base/feedback", MoveBaseActionFeedback, self.statusCall)     
-        self.cmd_vel_pub = rospy.Publisher("/turtlebot/cmd_vel", Twist, queue_size=10)
-        self.goal_pub = rospy.Publisher("/turtlebot/move_base_simple/goal", PoseStamped)        
-        self.twistMessage = Twist()
-        self.laser = []
+        self.laser = LaserScan()       
+        self.laser_sub = rospy.Subscriber("/turtlebot/scan", LaserScan, self.laser_callback, queue_size = 10)
+        rospy.sleep(1)
+        self.bridge = CvBridge()         
+        self.image_sub = rospy.Subscriber("/turtlebot/camera/rgb/image_raw", Image, self.callback, queue_size = 10)        
+        self.result_sub = rospy.Subscriber("/turtlebot/move_base/result", MoveBaseActionResult, self.resultCall, queue_size = 10)
+        self.cmd_vel_pub = rospy.Publisher("/turtlebot/cmd_vel", Twist, queue_size=10)      
+        self.goal_pub = rospy.Publisher("/turtlebot/move_base_simple/goal", PoseStamped, queue_size = 10)        
+        self.twistMessage = Twist()        
         self.foundRed = False
         self.foundYellow = False
         self.foundBlue = False
         self.foundGreen = False
         self.position1 = [-0.1, -4.4,[0,0,0,1]]
-        self.position2 = [-4.20, 1.70, [0,0,0.29,0.956]]
-        self.position3 = [-3.83, 0.96, [0,0,-0.337,0.94]]
-        self.position4 = [-1.19, 3.66, [0,0,0.079,0.996]]
-        self.position5 = [-0.54, 2.02, [0,0,0.0166,0.999]]
-        self.position6 = [2.67, 2.18, [0,0,-0.688,0.725]]
-        self.currentGoal = self.position1
-        self.goal1Achieved = False
-        self.goal2Achieved = False
-        self.goal3Achieved = False
-        self.goal4Achieved = False
-        self.goal5Achieved = False
-        self.sentgoal1 = False
-        self.isMoving = False
-        self.hasGoal = False 
-        self.foundColour = False        
+        self.position2 = [-0.536, -1.63, [0,0,-1,0]]
+        self.position3 = [-4.4, 0.36, [0,0,-0.074,0.997]]
+        self.position4 = [-3.81, 1.89, [0,0,0.371,0.928]]
+        self.position5 = [-1.7, -1.61, [0,0,0.0164,0.999]]
+        self.position6 = [-0.826, 0.823, [0,0,0.713,0.701]]
+        self.position7 = [-0.41, 4.08, [0,0,0.1,0.994]]
+        self.position8 = [0.271, 2.06, [0,0,-0.0347,0.999]]
+        self.position9 = [2.40, 1.875, [0,0,-0.583,0.812]]
+        self.goalSent = False
+        self.foundColour = False
+        self.goalResult = False
         self.twistMessage.linear.x = 0
         self.twistMessage.angular.x = 0
         self.colourChecked = False
-        rospy.sleep(2)
-        
-#    def statusCall(self, data):
-#        if data.status.status == 1:             
-#            self.hasGoal = True
-#        else: 
-#            self.hasGoal = False
+        self.goalAchieved = False
+        self.goalCounter = 1
+        rospy.sleep(3)
         
         
-    def lasercall(self, data):        
-        self.laser = data
-
-    def pose_callback(self, data):        
-        self.xPosition = data.pose.pose.position.x
-        self.yPosition = data.pose.pose.position.y
-        self.zOrien = data.pose.pose.orientation.z
-        self.wOrien = data.pose.pose.orientation.w
+    def resultCall(self, data):
+        self.goalResult = True  
+      
         
+    def laser_callback(self, data):        
+        self.laser = data        
     
     def callback(self,data):
         try:
@@ -75,8 +63,7 @@ class Colour_Finder:
             
         h, w, d = cv_image.shape
         self.imageHeight = h
-        self.imageWidth = w
-            
+        self.imageWidth = w            
         
         #Colour Slicing
         hsv_img = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
@@ -86,8 +73,8 @@ class Colour_Finder:
         redMask = cv2.inRange(hsv_img, redLower, redUpper)
         self.Mred = cv2.moments(redMask)
         #YELLOW
-        yellowLower = np.array([25, 90, 20])
-        yellowUpper = np.array([45, 255, 255])
+        yellowLower = np.array([25, 200, 100])
+        yellowUpper = np.array([30, 255, 255])
         yellowMask = cv2.inRange(hsv_img, yellowLower, yellowUpper)
         self.Myellow = cv2.moments(yellowMask)
         #BLUE
@@ -96,8 +83,8 @@ class Colour_Finder:
         blueMask = cv2.inRange(hsv_img, blueLower, blueUpper)
         self.Mblue = cv2.moments(blueMask)
         #GREEN
-        greenLower = np.array([60, 100, 40])
-        greenUpper = np.array([80, 255, 255])
+        greenLower = np.array([40, 200, 100])
+        greenUpper = np.array([60, 255, 255])
         greenMask = cv2.inRange(hsv_img, greenLower, greenUpper)
         self.Mgreen = cv2.moments(greenMask)
         
@@ -106,8 +93,8 @@ class Colour_Finder:
         self.imageHeight = h
         self.imageWidth = w
         
-        #Laserscan ranges
-        ranges = self.laser.ranges       
+        #Laserscan ranges        
+        ranges = self.laser.ranges         
         centre = ((len(ranges)-1)/2)           
         self.middleSlit = ranges[centre]        
 
@@ -119,9 +106,8 @@ class Colour_Finder:
         
     def detectColour(self):
         self.colourChecked = True
-        print("Detecting")
-        if self.Mred['m00'] > 50 and self.foundRed == False:
-            print("red")
+        Robot.goalAchieved = False
+        if self.Mred['m00'] > 50 and self.foundRed == False:            
             if np.nanmin(self.middleSlit >= 0.9):            
                 self.trackObject(self.Mred)                
             else:
@@ -131,9 +117,8 @@ class Colour_Finder:
                 self.foundRed = True
                 self.foundColour = True                
                 
-        elif self.Myellow['m00'] > 50 and self.foundYellow == False:
-            print("yellow")
-            if np.nanmin(self.middleSlit >= 0.7):            
+        elif self.Myellow['m00'] > 50 and self.foundYellow == False:            
+            if np.nanmin(self.middleSlit >= 0.9):            
                 self.trackObject(self.Myellow)  
             else:
                 self.twistMessage.linear.x = 0
@@ -142,9 +127,8 @@ class Colour_Finder:
                 self.foundYellow = True
                 self.foundColour = True
                 
-        elif self.Mblue['m00'] > 50 and self.foundBlue == False:
-            print("green")
-            if np.nanmin(self.middleSlit >= 0.7):            
+        elif self.Mblue['m00'] > 50 and self.foundBlue == False:            
+            if np.nanmin(self.middleSlit >= 0.9):            
                 self.trackObject(self.Mblue)  
             else:
                 self.twistMessage.linear.x = 0
@@ -153,9 +137,8 @@ class Colour_Finder:
                 self.foundBlue = True
                 self.foundColour = True
                 
-        elif self.Mgreen['m00'] > 50 and self.foundGreen == False:
-            print("green")
-            if np.nanmin(self.middleSlit >= 0.7):            
+        elif self.Mgreen['m00'] > 50 and self.foundGreen == False:            
+            if np.nanmin(self.middleSlit >= 0.9):            
                 self.trackObject(self.Mgreen)                
             else:
                 self.twistMessage.linear.x = 0
@@ -179,94 +162,140 @@ class Colour_Finder:
         Goal.pose.orientation.y = orien[1]
         Goal.pose.orientation.z = orien[2]
         Goal.pose.orientation.w = orien[3]
-        self.goal_pub.publish(Goal)         
-    
+        self.goal_pub.publish(Goal)      
+        
+    def goToGoal(self, position):        
+        if self.goalSent == False:
+            self.moveToPoint(position[0], position[1], position[2])
+            self.goalSent = True
+            print "Goal", self.goalCounter,"sent!"
+        if self.goalResult == True and self.goalSent == True:
+            print "Goal", self.goalCounter, "Achieved!"
+            self.goalAchieved = True
+            self.goalSent = False
+            self.colourChecked = False
+            self.foundColour = False
+            self.goalCounter += 1
+            
+            
+            
+            
     def trackObject(self, moments):
         cx = int(moments['m10']/moments['m00'])
         err = cx - self.imageWidth/2            
-        self.twistMessage.linear.x = 0.7
+        self.twistMessage.linear.x = 0.5
         self.twistMessage.angular.z = -float(err) / 100
         self.cmd_vel_pub.publish(self.twistMessage)
         
         
 if __name__ == '__main__':
     rospy.init_node('Colour_Finder', anonymous=True)
-    Robot = Colour_Finder()
-    goalSent = False
+    Robot = Colour_Finder()    
     
-    #Going to Goal 1    
     
-    while Robot.goal1Achieved == False:
-        if goalSent == False:
-            Robot.currentGoal = Robot.position1       
-            Robot.moveToPoint(Robot.currentGoal[0], Robot.currentGoal[1], Robot.currentGoal[2])
-            goalSent = True            
-            print("Goal 1 sent!")
-        if (Robot.currentGoal[0]-0.4) <= Robot.xPosition <= (Robot.currentGoal[0]+0.4) and (Robot.currentGoal[1]-0.4) <= Robot.yPosition <= (Robot.currentGoal[1]+0.4) and goalSent == True :
-            print("Goal 1 Achieved!")
-            Robot.goal1Achieved = True
-            Robot.currentGoal = Robot.position2
-            goalSent = False
-            Robot.colourChecked = False
-            Robot.foundColour = False
+    #Sending the robot to first position
     
-    #Checking for coloured objects at Goal 1
-    
+    Robot.goalResult = False
+    while Robot.goalAchieved == False:
+        Robot.goToGoal(Robot.position1)
+        
+    #Checking for colours after each goal
+    #The robot only checks for colours once after each goal before moving to next goal.
+        
     if Robot.colourChecked == False:
-        print("Finding Colour")
+        print("Checking for Colour")
+        while Robot.foundColour == False: #If it hasn't already found a colour then it will detect one.    
+            Robot.detectColour() #Checks for colour atleast once. If it sees a new one then it will run to it.
+    
+    #Sending the robot to the second position
+     
+    Robot.goalResult = False    
+    while Robot.goalAchieved == False:
+        Robot.goToGoal(Robot.position2)
+        
+    if Robot.colourChecked == False:
+        print("Checking for Colour")
         while Robot.foundColour == False:            
             Robot.detectColour()
-    print Robot.foundColour
-    
-    #Going to Goal 2    
-    
-    while Robot.goal2Achieved == False:
-        if goalSent == False:
-            Robot.moveToPoint(Robot.currentGoal[0], Robot.currentGoal[1], Robot.currentGoal[2])
-            goalSent = True
-            print("Goal 2 sent!")
-        if (Robot.currentGoal[0]-0.4) <= Robot.xPosition <= (Robot.currentGoal[0]+0.4) and (Robot.currentGoal[1]-0.4) <= Robot.yPosition <= (Robot.currentGoal[1]+0.4) and goalSent == True:
-            print("Goal 2 Achieved!")
-            Robot.goal2Achieved = True
-            Robot.currentGoal = Robot.position3
-            goalSent = False
-            Robot.colourChecked = False
-            Robot.foundColour = False
-            print Robot.foundColour
             
-    #Checking for coloured objects at Goal 2
+     #Sending the robot to third position
             
-    if Robot.colourChecked == False:
-        print("Finding Colour")
-        while Robot.foundColour == False:
-            Robot.detectColour()
-    print Robot.foundColour
-            
-    #Move to Goal 3
-            
-    while Robot.goal3Achieved == False:
-        if goalSent == False:
-            Robot.moveToPoint(Robot.currentGoal[0], Robot.currentGoal[1], Robot.currentGoal[2])
-            goalSent = True
-            print("Goal 3 sent!")
-        if (Robot.currentGoal[0]-0.4) <= Robot.xPosition <= (Robot.currentGoal[0]+0.4) and (Robot.currentGoal[1]-0.4) <= Robot.yPosition <= (Robot.currentGoal[1]+0.4) and goalSent == True:
-            print("Goal 3 Achieved!")
-            Robot.goal3Achieved = True
-            Robot.currentGoal = Robot.position4
-            goalSent = False
-            Robot.colourChecked = False
-            Robot.foundColour = False
-            print Robot.foundColour
-     
-    #Checking for coloured objects at Goal 3     
-     
-    if Robot.colourChecked == False:
-        print("Finding Colour")
-        print Robot.foundColour
-        while Robot.foundColour == False:
-            Robot.detectColour()
+    Robot.goalResult = False    
+    while Robot.goalAchieved == False:
+        Robot.goToGoal(Robot.position3)
         
-    
+    if Robot.colourChecked == False:
+        print("Checking for Colour")
+        while Robot.foundColour == False:            
+            Robot.detectColour()
+            
+     #Sending the robot to fourth position
+            
+    Robot.goalResult = False    
+    while Robot.goalAchieved == False:
+        Robot.goToGoal(Robot.position4)
+        
+    if Robot.colourChecked == False:
+        print("Checking for Colour")
+        while Robot.foundColour == False:            
+            Robot.detectColour()
+            
+     #Sending the robot to fifth position
+            
+    Robot.goalResult = False    
+    while Robot.goalAchieved == False:
+        Robot.goToGoal(Robot.position5)
+        
+    if Robot.colourChecked == False:
+        print("Checking for Colour")
+        while Robot.foundColour == False:            
+            Robot.detectColour()
+            
+     #Sending the robot to sixth position
+            
+    Robot.goalResult = False    
+    while Robot.goalAchieved == False:
+        Robot.goToGoal(Robot.position6)
+        
+    if Robot.colourChecked == False:
+        print("Checking for Colour")
+        while Robot.foundColour == False:            
+            Robot.detectColour()
+            
+     #Sending the robot to seventh position
+            
+    Robot.goalResult = False    
+    while Robot.goalAchieved == False:
+        Robot.goToGoal(Robot.position7)
+        
+    if Robot.colourChecked == False:
+        print("Checking for Colour")
+        while Robot.foundColour == False:            
+            Robot.detectColour()
+            
+     #Sending the robot to eighth position
+            
+    Robot.goalResult = False    
+    while Robot.goalAchieved == False:
+        Robot.goToGoal(Robot.position8)
+        
+    if Robot.colourChecked == False:
+        print("Checking for Colour")
+        while Robot.foundColour == False:            
+            Robot.detectColour()
+            
+    Robot.goalResult = False    
+    while Robot.goalAchieved == False:
+        Robot.goToGoal(Robot.position9)
+        
+    if Robot.colourChecked == False:
+        print("Checking for Colour")
+        while Robot.foundColour == False:            
+            Robot.detectColour()
+            
+    print("Visited all goals")
+    if Robot.foundBlue == True and Robot.foundGreen == True and Robot.foundRed == True and Robot.foundYellow == True:
+        print "Found all colours!"
     rospy.spin()
     
     cv2.destroyAllWindows()

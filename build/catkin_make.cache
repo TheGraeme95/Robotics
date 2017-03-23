@@ -1,0 +1,2 @@
+
+-DCATKIN_DEVEL_PREFIX=/home/computing/Robotics/devel -DCMAKE_INSTALL_PREFIX=/home/computing/Robotics/install -G Unix Makefiles
